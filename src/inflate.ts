@@ -99,6 +99,8 @@ export class Inflate implements Iterator<number>
         0x03, 0x13, 0x0b, 0x1b, 0x07, 0x17, 0x0f, 0x1f,
     ];
 
+    static endOfStreamEx = "End Of Stream Excheption";
+
     private _verifyAdler: Function;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -126,7 +128,7 @@ export class Inflate implements Iterator<number>
             if (0 < this._lengthUncompressed)
             {
                 var result: IteratorResult<number> = this._iterator.next();
-                if (result.done) throw "End Of Stream Exception";
+                if (result.done) throw Inflate.endOfStreamEx;
                 this._current = this._end;
                 this._window[this._current] = result.value;
                 this._end = (this._end + 1) & WindowMask;

@@ -15,10 +15,9 @@
 
 import {assert} from "chai";
 import {Inflate} from "../src/inflate";
-import {asInflatable} from "../src/flate-ts";
 
 
-describe("Flate tests -", function () {
+describe("Inflate tests -", function () {
 
     it("Support for Iterator<T> iterface on Array", function () {
         var iterator: any = fourBytes[Symbol.iterator]();
