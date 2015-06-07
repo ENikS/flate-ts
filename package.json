@@ -1,6 +1,6 @@
 {
   "name": "flate-ts",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "LINQ implemented in Typescript",
   "main": "src/flate-ts.js",
   "author": {
