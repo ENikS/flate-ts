@@ -14,7 +14,7 @@
 // License for the specific  language  governing  permissions  and  limitations 
 // under the License.
 
-
+import {Inflate} from "./inflate";
 
 
 
@@ -24,8 +24,9 @@
 * @example
 *  var iterable: Iterable<T> = inflate(arr); 
 */
-export function inflate<T>(source?: Iterable<T>): Iterable<T> {
-    return null;
+export function asInflatable<T>(source?: Iterable<number>): Iterable<number> {
+    if (null === source) throw "No Inflate source specidied";
+    return new FlateEnumerable(source, (iterator: Iterator<number>) => new Inflate(iterator));
 }
 
     
@@ -37,4 +38,17 @@ export function inflate<T>(source?: Iterable<T>): Iterable<T> {
 */
 export function zlibInflate<T>(source?: Iterable<T>): Iterable<T> {
     return null;
+}
+
+
+
+class FlateEnumerable implements Iterable<number> {
+
+    constructor(private _target: Iterable<number>, private _factory: Function) { }
+
+    /** Returns JavaScript iterator */
+    public [Symbol.iterator](): Iterator<number> {
+        return this._factory(this._target[Symbol.iterator]);
+    }
+
 }

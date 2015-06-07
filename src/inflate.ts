@@ -39,7 +39,7 @@
 import {InputBuffer} from "./input";
 import {HuffmanTree} from "./huffman-trees";
 
-export class Inflate implements Iterable<number>
+export class Inflate implements Iterator<number>
 {
     // Adler-32
     private s1: number = 1;
@@ -51,22 +51,22 @@ export class Inflate implements Iterable<number>
     private _end_of_block_code_seen;
     private _bfinal: number;
     private _isDynamic: boolean;
-    private _enumerator: Iterator<number>;
+    private _iterator: Iterator<number>;
     private _state: State = State.ReadingFinalBit;
 
     // IO
     private _input: InputBuffer;
 
     // Window
-    private _end: number;   // this is the position to where we should write next byte 
-    private _current: number;
-    private _window = new Uint8Array(WindowSize);   //The window is 2^15 bytes
+    private _end: number = 0;   // this is the position to where we should write next byte 
+    private _current: number = 0;
+    private _window = new Array<number>(WindowSize);   //The window is 2^15 bytes
 
-    private _lengthDecompressed: number;   // The number of bytes in the output window ready for serving.
-    private _lengthUncompressed: number;   // Number of uncompressed bytes to pass through
+    private _lengthDecompressed: number = 0;   // The number of bytes in the output window ready for serving.
+    private _lengthUncompressed: number = 0;   // Number of uncompressed bytes to pass through
 
-    private _codeList = new Uint8Array(HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements);
-    private _codeLengthTreeCodeLength = new Uint8Array(HuffmanTree.NumberOfCodeLengthTreeElements);
+    private _codeList = new Array<number>(HuffmanTree.MaxLiteralTreeElements + HuffmanTree.MaxDistTreeElements);
+    private _codeLengthTreeCodeLength = new Array<number>(HuffmanTree.NumberOfCodeLengthTreeElements);
 
 
 
@@ -101,21 +101,58 @@ export class Inflate implements Iterable<number>
 
     private _verifyAdler: Function;
 
+    ///////////////////////////////////////////////////////////////////////////
+
+    public constructor(iterator: Iterator<number>, verify: Function = null) {
+        this._input = new InputBuffer(iterator);
+        this._iterator = iterator;
+        this._verifyAdler = verify;
+    }
 
     ///////////////////////////////////////////////////////////////////////////
 
-    /** Returns JavaScript iterator */
-    public [Symbol.iterator](): Iterator<number> {
-        return null;
+
+    public next(): IteratorResult<number> {
+
+        do
+        {
+            if (0 < this._lengthDecompressed)
+            {
+                this._current = (this._end - this._lengthDecompressed) & WindowMask;
+                this._lengthDecompressed--;
+                return { done: false, value: this._window[this._current] };
+            }
+
+            if (0 < this._lengthUncompressed)
+            {
+                var result: IteratorResult<number> = this._iterator.next();
+                if (result.done) throw "End Of Stream Exception";
+                this._current = this._end;
+                this._window[this._current] = result.value;
+                this._end = (this._end + 1) & WindowMask;
+                this._lengthUncompressed--;
+
+                this.s1 += result.value;
+                this.s2 += this.s1;
+                return result;
+            }
+
+            this.s1 %= BASE;
+            this.s2 %= BASE;
+
+        } while ((State.Done != this._state) && this.Decode());
+
+        if (null != this._verifyAdler)
+        { 
+            this._verifyAdler(((this.s2 % BASE) << 16) | (this.s1 % BASE));
+        }
+        this._current = -1;
+
+        return { done: true, value: undefined };
     }
 
 
-
-    public constructor(enumerator: Iterator<number>, verify: Function = null) {
-        this._input = new InputBuffer(enumerator);
-        this._enumerator = enumerator;
-        this._verifyAdler = verify;
-    }
+    ///////////////////////////////////////////////////////////////////////////
 
     private Decode(): boolean {
         this._end_of_block_code_seen = false;
@@ -337,12 +374,23 @@ export class Inflate implements Iterable<number>
             }
         }
 
-        var literalTreeCodeLength = new Uint8Array(HuffmanTree.MaxLiteralTreeElements);
-        var distanceTreeCodeLength = new Uint8Array(HuffmanTree.MaxDistTreeElements);
 
-        // Create literal and distance tables
-        // TODO Array.Copy(this._codeList, literalTreeCodeLength, literalLengthCodeCount);
+        //byte[] literalTreeCodeLength = new byte[HuffmanTree.MaxLiteralTreeElements];
+        //byte[] distanceTreeCodeLength = new byte[HuffmanTree.MaxDistTreeElements];
+
+        //// Create literal and distance tables
+        //Array.Copy(this._codeList, literalTreeCodeLength, literalLengthCodeCount);
         //Array.Copy(this._codeList, literalLengthCodeCount, distanceTreeCodeLength, 0, distanceCodeCount);
+
+
+        var literalTreeCodeLength = this._codeList.slice(0, literalLengthCodeCount);
+        for (var l = literalTreeCodeLength.length; l < HuffmanTree.MaxLiteralTreeElements; l++) {
+            literalTreeCodeLength.push(0);
+        }
+        var distanceTreeCodeLength = this._codeList.slice(literalLengthCodeCount, literalLengthCodeCount + distanceCodeCount);
+        for (var d = distanceTreeCodeLength.length; d < HuffmanTree.MaxDistTreeElements; d++) {
+            distanceTreeCodeLength.push(0);
+        }
 
         // Make sure there is an end-of-block code, otherwise how could we ever end?
         if (literalTreeCodeLength[HuffmanTree.EndOfBlockCode] == 0) {
@@ -353,94 +401,6 @@ export class Inflate implements Iterable<number>
         this._distanceTree = new HuffmanTree(distanceTreeCodeLength);
         return true;
     }
-
-
-    /// <summary>
-    /// Implementing GetEnumerator varerface
-    /// </summary>
-    /// <returns>Enumerator</returns>
-    //public IEnumerator<byte> GetEnumerator() { return this; }
-
-    //System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-    //{
-    //    return this;
-    //}
-
-    //byte IEnumerator<byte>.Current
-    //{
-    //    get
-    //    {
-    //        return this._window[this._current];
-    //    }
-    //}
-
-    //void IDisposable.Dispose()
-    //{
-    //    this._current = -1;
-    //    this._input = null;
-    //    this._window = null;
-    //    this._distanceTree = null;
-    //    this._literalLengthTree = null;
-    //}
-
-    //object System.Collections.IEnumerator.Current
-    //{
-    //    get
-    //    {
-    //        return this._window[this._current];
-    //    }
-    //}
-
-    ///// <summary>
-    ///// Move to next byte
-    ///// </summary>
-    ///// <returns>True if successful</returns>
-    //bool System.Collections.IEnumerator.MoveNext()
-    //{
-    //    do
-    //    {
-    //        if (0 < this._lengthDecompressed)
-    //        {
-    //            this._current = (this._end - this._lengthDecompressed) & WindowMask;
-    //            this._lengthDecompressed--;
-    //            return true;
-    //        }
-
-    //        if (0 < this._lengthUncompressed)
-    //        {
-    //            if (!this._enumerator.MoveNext())
-    //            {
-    //                throw new EndOfStreamException();
-    //            }
-    //            byte buffer = _enumerator.Current;
-    //            this._current = this._end;
-    //            this._window[this._current] = buffer;
-    //            this._end = (this._end + 1) & WindowMask;
-    //            this._lengthUncompressed--;
-
-    //            this.s1 += buffer;
-    //            this.s2 += this.s1;
-    //            return true;
-    //        }
-
-    //        this.s1 %= BASE;
-    //        this.s2 %= BASE;
-
-    //    } while ((State.Done != this._state) && Decode());
-
-    //    if (null != this._verifyAdler)
-    //    { 
-    //        this._verifyAdler(((s2 % BASE) << 16) | (s1 % BASE));
-    //    }
-    //    this._current = -1;
-    //    return false;
-    //}
-
-
-    //void System.Collections.IEnumerator.Reset()
-    //{
-    //    throw new NotImplementedException();
-    //}
 
 
     // Add a byte to output window
@@ -461,22 +421,11 @@ export class Inflate implements Iterable<number>
 
         var border = WindowSize - length;
         if (copyStart <= border && this._end < border) {
-            if (length <= distance) {
-                // TODO:                   System.Array.Copy(this._window, copyStart, this._window, this._end, length);
-                this.adler32(copyStart, length);
-                this._end += length;
-            }
-            else {
-                // The referenced string may overlap the current
-                // position; for example, if the last 2 bytes decoded have values
-                // X and Y, a string reference with <length = 5, distance = 2>
-                // adds X,Y,X,Y,X to the output stream.
-                while (length-- > 0) {
-                    var source = this._window[copyStart++];
-                    this._window[this._end++] = source;
-                    this.s1 += source;
-                    this.s2 += this.s1;
-                }
+            while (length-- > 0) {
+                var source = this._window[copyStart++];
+                this._window[this._end++] = source;
+                this.s1 += source;
+                this.s2 += this.s1;
             }
         }
         else { // copy byte by byte

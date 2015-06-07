@@ -21,7 +21,7 @@ declare module Flate {
     * @example
     *  var iterable: Iterable<T> = inflate(arr); 
     */
-    export function inflate<T>(source?: Iterable<T>): Iterable<T>;
+    export function asInflatable<T>(source?: Iterable<T>): Iterable<T>;
     
     /**
     * Inflates deflated archave packaged as zlib stream and stored in Iterable<T> object.

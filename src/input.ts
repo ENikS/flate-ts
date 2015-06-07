@@ -50,10 +50,10 @@ export class InputBuffer {
 
     private _bitBuffer: number = 0;      // store the bits here, we can quickly shift in this buffer
     private _bitsInBuffer: number = 0;    // number of bits available in bitBuffer
-    _enumerator: Iterator<number>;
+    _iterator: Iterator<number>;
 
-    public constructor(enumerator: Iterator<number>) {
-        this._enumerator = enumerator;
+    public constructor(iterator: Iterator<number>) {
+        this._iterator = iterator;
     }
 
     // Total bits available in the input buffer
@@ -65,10 +65,10 @@ export class InputBuffer {
     // This function will load up to 16 bits into bitBuffer.
     public TryGetBits(count = 15): number {
         var result: IteratorResult<number>;
-        if ((this._bitsInBuffer < count) && !(result = this._enumerator.next()).done) {
+        if ((this._bitsInBuffer < count) && !(result = this._iterator.next()).done) {
             this._bitBuffer |= result.value << this._bitsInBuffer;
             this._bitsInBuffer += 8;
-            if ((this._bitsInBuffer < count) && !(result = this._enumerator.next()).done) {
+            if ((this._bitsInBuffer < count) && !(result = this._iterator.next()).done) {
                 this._bitBuffer |= result.value << this._bitsInBuffer;
                 this._bitsInBuffer += 8;
             }
@@ -78,10 +78,10 @@ export class InputBuffer {
 
     public GetBits(count: number): number {
         var result: IteratorResult<number>;
-        if ((this._bitsInBuffer < count) && !(result = this._enumerator.next()).done) {
+        if ((this._bitsInBuffer < count) && !(result = this._iterator.next()).done) {
             this._bitBuffer |= result.value << this._bitsInBuffer;
             this._bitsInBuffer += 8;
-            if ((this._bitsInBuffer < count) && !(result = this._enumerator.next()).done) {
+            if ((this._bitsInBuffer < count) && !(result = this._iterator.next()).done) {
                 this._bitBuffer |= result.value << this._bitsInBuffer;
                 this._bitsInBuffer += 8;
             }

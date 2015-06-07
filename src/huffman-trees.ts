@@ -34,17 +34,17 @@ export class HuffmanTree {
     public static EndOfBlockCode = 256;
     public static NumberOfCodeLengthTreeElements = 19;
 
-    private _tableBits: number;
-    private _table: Uint8Array;
-    private _left: Uint8Array;
-    private _right: Uint8Array;
-    private _codeLengthArray: Uint8Array;
+    private _tableBits: number = 0;
+    private _table: Int16Array;
+    private _left: Int16Array;
+    private _right: Int16Array;
+    private _codeLengthArray: Array<number>;
 
-    private _tableMask: number;
+    private _tableMask: number = 0;
     private _maxCodeLength = 0;
 
     // huffman tree for static block
-    private static s_staticLiteralLengthTree: HuffmanTree = new HuffmanTree(HuffmanTree.GetStaticLiteralTreeLength());;
+    private static s_staticLiteralLengthTree: HuffmanTree = new HuffmanTree(HuffmanTree.GetStaticLiteralTreeLength());
     private static s_staticDistanceTree: HuffmanTree = new HuffmanTree(HuffmanTree.GetStaticDistanceTreeLength());
 
     public static get StaticLiteralLengthTree(): HuffmanTree {
@@ -55,10 +55,10 @@ export class HuffmanTree {
         return HuffmanTree.s_staticDistanceTree;
     }
 
-    constructor(codeLengths: Uint8Array) {
+    constructor(codeLengths: Array<number>) {
         // Code lengths
         this._codeLengthArray = codeLengths;
-        for (var length in codeLengths) {
+        for (var length of codeLengths) {
             this._maxCodeLength = Math.max(length, this._maxCodeLength);
         }
 
@@ -77,8 +77,8 @@ export class HuffmanTree {
 
     // Generate the array contains huffman codes lengths for static huffman tree.
     // The data is in RFC 1951.
-    private static GetStaticLiteralTreeLength(): Uint8Array {
-        var i, literalTreeLength = new Uint8Array(HuffmanTree.MaxLiteralTreeElements);
+    private static GetStaticLiteralTreeLength(): Array<number> {
+        var i, literalTreeLength = new Array<number>(HuffmanTree.MaxLiteralTreeElements);
         for (i = 0; i <= 143; i++)
             literalTreeLength[i] = 8;
 
@@ -94,8 +94,8 @@ export class HuffmanTree {
         return literalTreeLength;
     }
 
-    private static GetStaticDistanceTreeLength(): Uint8Array {
-        var staticDistanceTreeLength = new Uint8Array(HuffmanTree.MaxDistTreeElements);
+    private static GetStaticDistanceTreeLength(): Array<number> {
+        var staticDistanceTreeLength = new Array<number>(HuffmanTree.MaxDistTreeElements);
         for (var i = 0; i < HuffmanTree.MaxDistTreeElements; i++) {
             staticDistanceTreeLength[i] = 5;
         }
@@ -105,21 +105,21 @@ export class HuffmanTree {
 
     // Calculate the huffman code for each character based on the code length for each character.
     // This algorithm is described in standard RFC 1951
-    private CalculateHuffmanCode(): Uint8Array {
-        var bitLengthCount = new Uint8Array(17);
-        for (var codeLength in this._codeLengthArray) {
+    private CalculateHuffmanCode(): Uint32Array {
+        var bitLengthCount = new Uint32Array(17);
+        for (var codeLength of this._codeLengthArray) {
             bitLengthCount[codeLength]++;
         }
         bitLengthCount[0] = 0;  // clear count for length 0
 
-        var nextCode = new Uint8Array(17);
+        var nextCode = new Uint32Array(17);
         var tempCode = 0;
         for (var bits = 1; bits <= 16; bits++) {
             tempCode = (tempCode + bitLengthCount[bits - 1]) << 1;
             nextCode[bits] = tempCode;
         }
 
-        var code = new Uint8Array(HuffmanTree.MaxLiteralTreeElements);
+        var code = new Uint32Array(HuffmanTree.MaxLiteralTreeElements);
         for (var i = 0; i < this._codeLengthArray.length; i++) {
             var len = this._codeLengthArray[i];
 
@@ -133,12 +133,12 @@ export class HuffmanTree {
 
     private CreateTable() {
         var codeArray = this.CalculateHuffmanCode();
-        this._table = new Uint8Array(1 << this._tableBits);
+        this._table = new Int16Array(1 << this._tableBits);
 
         // I need to find proof that left and right array will always be 
         // enough. I think they are.
-        this._left = new Uint8Array(2 * this._codeLengthArray.length);
-        this._right = new Uint8Array(2 * this._codeLengthArray.length);
+        this._left = new Int16Array(2 * this._codeLengthArray.length);
+        this._right = new Int16Array(2 * this._codeLengthArray.length);
         var avail = this._codeLengthArray.length;
 
         for (var ch = 0; ch < this._codeLengthArray.length; ch++) {
@@ -194,7 +194,7 @@ export class HuffmanTree {
                     // This is in place to avoid bloating the table if there are
                     // a few ones with long code.
                     var index = start & ((1 << this._tableBits) - 1);
-                    var array = this._table;
+                    var array: Int16Array|Array<number> = this._table;
 
                     do {
                         var value = array[index];
@@ -236,21 +236,21 @@ export class HuffmanTree {
         var bitBuffer = input.TryGetBits(this._maxCodeLength);
 
         // decode an element 
-        var symbol = this._table[bitBuffer & this._tableMask];
-        if (symbol < 0) {   //  this will be the start of the binary tree
+        var smbl = this._table[bitBuffer & this._tableMask];
+        if (smbl < 0) {   //  this will be the start of the binary tree
             // navigate the tree
             var mask = 1 << this._tableBits;
             do {
-                symbol = -symbol;
+                smbl = -smbl;
                 if ((bitBuffer & mask) == 0)
-                    symbol = this._left[symbol];
+                    smbl = this._left[smbl];
                 else
-                    symbol = this._right[symbol];
+                    smbl = this._right[smbl];
                 mask <<= 1;
-            } while (symbol < 0);
+            } while (smbl < 0);
         }
 
-        var codeLength = this._codeLengthArray[symbol];
+        var codeLength = this._codeLengthArray[smbl];
 
         // If this code is longer than the # bits we had in the bit buffer 
         // (i.e. we read only part of the code), not good.
@@ -259,7 +259,7 @@ export class HuffmanTree {
         }
         input.SkipBits(codeLength);
 
-        return symbol;
+        return smbl;
     }
 
     public static BitReverse(code: number, length: number): number {
