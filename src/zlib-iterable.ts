@@ -1,4 +1,4 @@
-﻿/// <reference path="../typings/zlib-ts.d.ts" />
+﻿/// <reference path="../typings/zlib-iterable.d.ts" />
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright (c) ENikS.  All rights reserved.
 //

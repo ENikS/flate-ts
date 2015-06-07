@@ -14,7 +14,7 @@
 // under the License.
 
 
-declare module Flate {
+declare module ZLib {
     /**
     * Inflates deflated archave stored in Iterable<T> 
     * @param source An Array, Typed array, String or other Iterable object.
@@ -33,8 +33,8 @@ declare module Flate {
 }
 
 
-declare module "flate-ts" {
-    export = Flate;
+declare module "zlib-iterable" {
+    export = ZLib;
 }
 
 

@@ -38,7 +38,7 @@
     <Content Include="README.md" />
     <TypeScriptCompile Include="Scripts\typings\chai\chai.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\mocha\mocha.d.ts" />
-    <TypeScriptCompile Include="src\zlib-ts.ts" />
+    <TypeScriptCompile Include="src\zlib-iterable.ts" />
     <TypeScriptCompile Include="src\huffman-trees.ts" />
     <TypeScriptCompile Include="src\inflate.ts" />
     <TypeScriptCompile Include="src\input.ts" />
@@ -50,7 +50,7 @@
       <SubType>Code</SubType>
       <TestFramework>Mocha</TestFramework>
     </TypeScriptCompile>
-    <TypeScriptCompile Include="typings\zlib-ts.d.ts" />
+    <TypeScriptCompile Include="typings\zlib-iterable.d.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Scripts\typings\chai\" />

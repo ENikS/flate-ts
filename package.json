@@ -1,8 +1,8 @@
 {
-  "name": "zlib-ts",
+  "name": "zlib-iterable",
   "version": "0.9.3",
   "description": "ZLib implemented as Iterabel",
-  "main": "src/zlib-ts.js",
+  "main": "src/zlib-iterable.js",
   "author": {
     "name": "Eugene Sadovoi",
     "email": "evgeni@eniks.com"
@@ -10,7 +10,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ENikS/zlib-ts.git"
+    "url": "https://github.com/ENikS/zlib-iterable.git"
   },
   "devDependencies": {
     "chai": "^3.0.0",
