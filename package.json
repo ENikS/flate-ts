@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "chai": "^3.0.0",
-    "es6-shim": "^0.31.3",
-    "mocha": "^2.2.5"
+    "es6-shim": "^0.35.3",
+    "mocha": "^3.4.1"
   },
   "scripts": {
     "test": "mocha tests/  --recursive"
